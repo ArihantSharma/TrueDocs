@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+asyncpg
+web3
+python-multipart
+passlib
+bcrypt<4.0.0
+pyjwt
+pydantic
+cryptography
+requests
