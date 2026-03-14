@@ -85,3 +85,42 @@ class DocumentDB:
         """
 
         return await self.db.execute(query, doc_hash)
+
+    async def get_posts_by_org(self, org_id):
+        query = """
+        SELECT 
+            post_title, 
+            MAX(holder_name) as holder_name,
+            MAX(validity) as validity,
+            COUNT(id) as document_count,
+            MIN(created_at) as created_at,
+            BOOL_OR(revoked) as any_revoked
+        FROM documents
+        WHERE org_id=$1
+        GROUP BY post_title
+        ORDER BY MIN(created_at) DESC
+        """
+        return await self.db.fetch(query, org_id)
+
+    async def get_documents_by_post(self, org_id, post_title):
+        query = """
+        SELECT * FROM documents
+        WHERE org_id=$1 AND post_title=$2
+        """
+        return await self.db.fetch(query, org_id, post_title)
+
+    async def update_post_details(self, org_id, old_post_title, new_post_title, new_holder_name):
+        query = """
+        UPDATE documents
+        SET post_title=$1, holder_name=$2
+        WHERE org_id=$3 AND post_title=$4
+        """
+        return await self.db.execute(query, new_post_title, new_holder_name, org_id, old_post_title)
+
+    async def revoke_post(self, org_id, post_title):
+        query = """
+        UPDATE documents
+        SET revoked=TRUE
+        WHERE org_id=$1 AND post_title=$2
+        """
+        return await self.db.execute(query, org_id, post_title)

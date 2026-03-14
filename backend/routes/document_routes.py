@@ -104,3 +104,69 @@ async def revoke_document(
     await doc_db.revoke_document(doc_hash)
     
     return {"status": "success", "message": "Document revoked", "tx": tx}
+
+@router.get("/document/posts")
+async def get_posts(
+    org=Depends(get_current_organisation),
+    doc_db=Depends(get_doc_db)
+):
+    org_id = org["sub"]
+    posts = await doc_db.get_posts_by_org(org_id)
+    return {"posts": [dict(p) for p in posts]}
+
+from pydantic import BaseModel
+
+class UpdatePostRequest(BaseModel):
+    old_post_title: str
+    new_post_title: str
+    new_holder_name: str
+
+@router.put("/document/post")
+async def update_post(
+    request: UpdatePostRequest,
+    org=Depends(get_current_organisation),
+    doc_db=Depends(get_doc_db)
+):
+    org_id = org["sub"]
+    await doc_db.update_post_details(
+        org_id, 
+        request.old_post_title, 
+        request.new_post_title, 
+        request.new_holder_name
+    )
+    return {"status": "success", "message": "Post updated successfully"}
+
+class RevokePostRequest(BaseModel):
+    post_title: str
+
+@router.delete("/document/post")
+async def revoke_post(
+    request: RevokePostRequest,
+    org=Depends(get_current_organisation),
+    doc_db=Depends(get_doc_db),
+    blockchain=Depends(get_blockchain)
+):
+    org_id = org["sub"]
+    
+    # Get all documents for this post to revoke on blockchain
+    docs = await doc_db.get_documents_by_post(org_id, request.post_title)
+    
+    if not docs:
+        raise HTTPException(status_code=404, detail="Post not found")
+        
+    # Check if any are already revoked to avoid redundant txs (optional optimization)
+    # Revoke each on the blockchain
+    txs = []
+    for doc in docs:
+        if not doc["revoked"]:
+            tx = await blockchain.revoke_hash(doc["document_hash"])
+            txs.append(tx)
+            
+    # Mark all as revoked in SQL
+    await doc_db.revoke_post(org_id, request.post_title)
+    
+    return {
+        "status": "success", 
+        "message": f"Successfully revoked {len(txs)} documents in post '{request.post_title}'",
+        "txs": txs
+    }

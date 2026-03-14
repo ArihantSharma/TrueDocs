@@ -8,6 +8,7 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import OrgDashboard from './pages/OrgDashboard';
+import OrgPosts from './pages/OrgPosts';
 
 // ... rest of your App.js code
 
@@ -52,6 +53,14 @@ function App() {
             element={
               <PrivateRoute allowedRole="organisation">
                 <OrgDashboard />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/organization/posts" 
+            element={
+              <PrivateRoute allowedRole="organisation">
+                <OrgPosts />
               </PrivateRoute>
             } 
           />
