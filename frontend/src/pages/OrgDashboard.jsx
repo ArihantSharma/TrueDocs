@@ -96,6 +96,7 @@ const OrgDashboard = () => {
       const address = await signer.getAddress();
       setAccount(address);
       setNetworkWarning('');
+      localStorage.setItem(`wallet_${token?.substring(0,10)}`, address);
 
       // Step 4: Create contract on the fresh, correctly-networked signer
       const loadedContract = new ethers.Contract(CONTRACT_ADDRESS, TrueDocsRegistryABI, signer);

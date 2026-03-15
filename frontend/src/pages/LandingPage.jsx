@@ -114,6 +114,71 @@ const LandingPage = () => {
     setErrorMsg('');
   };
 
+  const exportToCSV = () => {
+    if (results.length === 0) return;
+
+    const escapeCSV = (field) => {
+      if (field === undefined || field === null) return '""';
+      const stringField = String(field);
+      // If the field contains quotes, commas, or newlines, wrap it in quotes and double the internal quotes
+      if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\\n') || stringField.includes('\\r')) {
+        return `"${stringField.replace(/"/g, '""')}"`;
+      }
+      return stringField;
+    };
+
+    // Calculate Summary Stats
+    const total = results.length;
+    const valid = results.filter(r => r.status === 'VALID').length;
+    const revoked = results.filter(r => r.status === 'REVOKED').length;
+    const expired = results.filter(r => r.status === 'EXPIRED').length;
+    const unverified = results.filter(r => r.status.includes('UNVERIFIED') || r.status === 'ERROR').length;
+
+    // Use \\r\\n (CRLF) for best compatibility with Excel and other spreadsheet software
+    const CRLF = '\\r\\n';
+    
+    let csvContent = "";
+    csvContent += `TrueDocs Verification Report${CRLF}`;
+    csvContent += `Generated On:,${escapeCSV(new Date().toLocaleString())}${CRLF}${CRLF}`;
+    
+    csvContent += `--- SUMMARY ---${CRLF}`;
+    csvContent += `Total Documents Checked,${total}${CRLF}`;
+    csvContent += `Valid Authenticated,${valid}${CRLF}`;
+    csvContent += `Revoked (Action Required),${revoked}${CRLF}`;
+    csvContent += `Expired,${expired}${CRLF}`;
+    csvContent += `Unverified / Error,${unverified}${CRLF}${CRLF}`;
+
+    csvContent += `--- DETAILED RESULTS ---${CRLF}`;
+    const headers = ['File Name', 'Verification Status', 'System Message', 'Cryptographic Hash (SHA-256)', 'Batch / Post Title', 'Holder Name', 'Validity Expiration', 'Original Issue Date'];
+    csvContent += headers.join(',') + CRLF;
+    
+    const rows = results.map(res => {
+        return [
+            escapeCSV(res.fileName),
+            escapeCSV(res.status),
+            escapeCSV(res.message),
+            escapeCSV(res.hash),
+            escapeCSV(res?.details?.post_title || 'N/A'),
+            escapeCSV(res?.details?.holder_name || 'N/A'),
+            escapeCSV(res?.details?.validity || 'N/A'),
+            escapeCSV(res?.details?.issued_at ? new Date(res.details.issued_at).toLocaleString() : 'N/A')
+        ].join(',');
+    });
+
+    csvContent += rows.join(CRLF);
+
+    // Add BOM for UTF-8 to ensure Excel reads special characters correctly
+    const blob = new Blob(["\\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `TrueDocs_Verification_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
       {/* Navbar equivalent */}
@@ -215,11 +280,17 @@ const LandingPage = () => {
           </div>
         ) : (
           <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 flex-col md:flex-row gap-4">
               <h2 className="text-3xl font-bold text-white">Verification Results</h2>
-              <button onClick={reset} className="px-5 py-2 glass-panel-hover rounded-lg text-slate-300 hover:text-white text-sm font-medium border border-white/10 transition-colors">
-                Verify More
-              </button>
+              <div className="flex gap-4 w-full md:w-auto">
+                <button onClick={exportToCSV} className="flex-1 md:flex-none px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl text-white font-medium shadow-lg hover:shadow-emerald-500/25 transition-all flex justify-center items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  Export CSV Report
+                </button>
+                <button onClick={reset} className="flex-1 md:flex-none px-6 py-2.5 glass-panel-hover rounded-xl text-slate-300 hover:text-white font-medium border border-white/10 transition-colors">
+                  Verify More
+                </button>
+              </div>
             </div>
             
             {results.map((res, idx) => (
