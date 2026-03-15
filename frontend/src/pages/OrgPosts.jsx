@@ -199,145 +199,213 @@ const OrgPosts = () => {
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h2>Manage Document Posts</h2>
-        <button 
-          onClick={() => navigate('/organization/')}
-          style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-          Back to Upload
-        </button>
-      </div>
+    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+          <div>
+            <h2 className="text-4xl font-bold text-white tracking-tight mb-2">Manage <span className="gradient-text">Vault</span></h2>
+            <p className="text-slate-400 text-lg">View, edit, or revoke issued document batches.</p>
+          </div>
+          <button 
+            onClick={() => navigate('/organization/')}
+            className="px-6 py-2.5 glass-panel-hover rounded-xl text-white font-medium transition-all duration-300 border border-white/10 flex items-center shadow-lg"
+          >
+            <svg className="w-5 h-5 mr-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Issuance
+          </button>
+        </div>
 
-      {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
-
-      {/* Wallet Connection Banner */}
-      <div style={{ 
-        backgroundColor: account ? '#d4edda' : '#fff3cd', 
-        padding: '15px', 
-        borderRadius: '8px', 
-        marginBottom: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        border: `1px solid ${account ? '#c3e6cb' : '#ffeeba'}`
-      }}>
-        {account ? (
-          <p style={{ margin: 0, color: '#155724', fontWeight: 'bold' }}>
-            ✅ Wallet Connected: {account.substring(0, 6)}...{account.substring(38)}
-          </p>
-        ) : (
-          <>
-            <p style={{ margin: 0, color: '#856404' }}>
-              ⚠️ You must connect your Web3 Wallet to perform batch revocations.
-            </p>
-            <button 
-              onClick={connectWallet}
-              style={{ padding: '8px 15px', backgroundColor: '#f5841f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              Connect MetaMask
-            </button>
-          </>
+        {errorMsg && (
+          <div className="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl font-medium animate-in fade-in">
+            {errorMsg}
+          </div>
         )}
+
+        {/* Wallet Connection Banner (For Revocation) */}
+        <div className={`
+          relative overflow-hidden p-6 rounded-2xl mb-10 flex flex-col md:flex-row justify-between items-center gap-6 border transition-all duration-500 shadow-xl
+          ${account 
+            ? 'bg-emerald-500/10 border-emerald-500/30' 
+            : 'bg-amber-500/10 border-amber-500/30'
+          }
+        `}>
+          <div className="flex items-center gap-4 z-10 w-full md:w-auto">
+            <div className={`p-3 rounded-full ${account ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+            </div>
+            <div>
+              {account ? (
+                <>
+                  <p className="text-emerald-400 font-bold text-lg mb-1">Revocation Authority Active</p>
+                  <p className="text-emerald-200/70 font-mono text-sm tracking-widest">{account}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-amber-400 font-bold text-lg mb-1">Wallet Required for Revocation</p>
+                  <p className="text-amber-200/70 text-sm">Connect your Web3 Wallet to perform batch revocations.</p>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {!account && (
+            <div className="z-10 w-full md:w-auto">
+              <button 
+                onClick={connectWallet}
+                className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] transition-all duration-300"
+              >
+                Connect MetaMask
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Data Container */}
+        <div className="glass-panel rounded-3xl overflow-hidden relative min-h-[400px]">
+           {loading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <svg className="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="text-slate-400 font-medium">Fetching secure vault records...</p>
+            </div>
+           ) : posts.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+              </div>
+              <p className="text-slate-300 text-xl font-medium mb-2">Your vault is empty</p>
+              <p className="text-slate-500">You haven't issued any document batches yet.</p>
+            </div>
+           ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left whitespace-nowrap">
+                <thead>
+                  <tr className="bg-black/40 text-slate-400 text-xs uppercase tracking-widest border-b border-white/10">
+                    <th className="px-8 py-5 font-semibold">Post Title</th>
+                    <th className="px-6 py-5 font-semibold">Holder Name</th>
+                    <th className="px-6 py-5 font-semibold">Volume</th>
+                    <th className="px-6 py-5 font-semibold">Issued Date</th>
+                    <th className="px-6 py-5 font-semibold">Status</th>
+                    <th className="px-8 py-5 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {posts.map((post, idx) => (
+                    <tr key={idx} className="hover:bg-white/5 transition-colors group">
+                      <td className="px-8 py-5">
+                        <span className="text-white font-medium text-lg">{post.post_title}</span>
+                      </td>
+                      <td className="px-6 py-5 text-slate-300">
+                        {post.holder_name}
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="bg-white/10 text-slate-300 px-3 py-1 rounded-full text-xs font-semibold">{post.document_count} files</span>
+                      </td>
+                      <td className="px-6 py-5 text-slate-400">
+                        {new Date(post.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="px-6 py-5">
+                         {post.any_revoked ? (
+                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]">
+                               REVOKED
+                             </span>
+                         ) : !post.all_confirmed ? (
+                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
+                               PENDING
+                             </span>
+                         ) : (
+                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                               ACTIVE
+                             </span>
+                         )}
+                      </td>
+                      <td className="px-8 py-5 text-right space-x-3">
+                         <button 
+                             onClick={() => handleEditClick(post)}
+                             disabled={post.any_revoked}
+                             className={`
+                               px-4 py-2 rounded-lg font-medium text-sm transition-all
+                               ${post.any_revoked 
+                                 ? 'bg-black/20 text-slate-600 cursor-not-allowed' 
+                                 : 'bg-white/10 text-white hover:bg-white/20 border border-white/10 hover:border-white/30'}
+                             `}
+                          >
+                             Edit
+                         </button>
+                         <button 
+                             onClick={() => handleRevoke(post.post_title)}
+                             disabled={post.any_revoked}
+                             className={`
+                               px-4 py-2 rounded-lg font-medium text-sm transition-all
+                               ${post.any_revoked 
+                                 ? 'bg-black/20 text-slate-600 cursor-not-allowed' 
+                                 : 'bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white border border-rose-500/30 hover:border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.1)] hover:shadow-[0_0_20px_rgba(244,63,94,0.4)]'}
+                             `}
+                          >
+                             Revoke Batch
+                         </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+           )}
+        </div>
       </div>
 
-      {loading ? (
-        <p>Loading posts...</p>
-      ) : posts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '50px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-            <p style={{ fontSize: '1.2rem', color: '#6c757d' }}>No document posts found.</p>
-        </div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', backgroundColor: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-            <thead>
-                <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                <th style={{ padding: '15px' }}>Post Title</th>
-                <th style={{ padding: '15px' }}>Holder Name</th>
-                <th style={{ padding: '15px' }}>Documents</th>
-                <th style={{ padding: '15px' }}>Date Uploaded</th>
-                <th style={{ padding: '15px' }}>Status</th>
-                <th style={{ padding: '15px', textAlign: 'right' }}>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {posts.map((post, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '15px', fontWeight: 'bold' }}>{post.post_title}</td>
-                    <td style={{ padding: '15px' }}>{post.holder_name}</td>
-                    <td style={{ padding: '15px' }}>{post.document_count} files</td>
-                    <td style={{ padding: '15px' }}>{new Date(post.created_at).toLocaleDateString()}</td>
-                    <td style={{ padding: '15px' }}>
-                        {post.any_revoked ? (
-                            <span style={{ color: '#dc3545', fontWeight: 'bold' }}>🔴 REVOKED</span>
-                        ) : !post.all_confirmed ? (
-                            <span style={{ color: '#856404', fontWeight: 'bold', backgroundColor: '#fff3cd', padding: '2px 8px', borderRadius: '4px' }}>⏳ PENDING BLOCKCHAIN</span>
-                        ) : (
-                            <span style={{ color: '#28a745', fontWeight: 'bold' }}>✅ ACTIVE</span>
-                        )}
-                    </td>
-                    <td style={{ padding: '15px', textAlign: 'right' }}>
-                        <button 
-                            onClick={() => handleEditClick(post)}
-                            disabled={post.any_revoked}
-                            style={{ padding: '6px 12px', marginRight: '10px', backgroundColor: post.any_revoked ? '#e9ecef' : '#ffc107', color: post.any_revoked ? '#6c757d' : '#000', border: 'none', borderRadius: '4px', cursor: post.any_revoked ? 'not-allowed' : 'pointer' }}>
-                            Edit
-                        </button>
-                        <button 
-                            onClick={() => handleRevoke(post.post_title)}
-                            disabled={post.any_revoked}
-                            style={{ padding: '6px 12px', backgroundColor: post.any_revoked ? '#e9ecef' : '#dc3545', color: post.any_revoked ? '#6c757d' : 'white', border: 'none', borderRadius: '4px', cursor: post.any_revoked ? 'not-allowed' : 'pointer' }}>
-                            Revoke
-                        </button>
-                    </td>
-                </tr>
-                ))}
-            </tbody>
-            </table>
-        </div>
-      )}
-
-      {/* Edit Modal */}
+      {/* Edit Modal (Glass UI) */}
       {editingPost && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center'
-        }}>
-          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', width: '400px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Edit Post: {editingPost.post_title}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-slate-900 border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
             
-            <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Batch/Post Title</label>
-                <input 
-                    type="text" 
-                    value={newTitle} 
-                    onChange={e => setNewTitle(e.target.value)} 
-                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }}
-                />
-            </div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mt-10 -mr-10 pointer-events-none"></div>
 
-            <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Holder/Description Name</label>
-                <input 
-                    type="text" 
-                    value={newHolder} 
-                    onChange={e => setNewHolder(e.target.value)} 
-                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }}
-                />
-            </div>
+            <div className="relative z-10">
+              <h3 className="text-2xl font-bold text-white mb-6">Edit Meta: <span className="text-blue-400">{editingPost.post_title}</span></h3>
+              
+              <div className="space-y-5">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-slate-300 ml-1">Batch / Post Title</label>
+                    <input 
+                        type="text" 
+                        value={newTitle} 
+                        onChange={e => setNewTitle(e.target.value)} 
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
+                    />
+                </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button 
-                    onClick={() => setEditingPost(null)}
-                    style={{ padding: '10px 15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-                    Cancel
-                </button>
-                <button 
-                    onClick={submitEdit}
-                    style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-                    Save Changes
-                </button>
+                <div className="space-y-1.5 mb-8">
+                    <label className="text-sm font-medium text-slate-300 ml-1">Holder / Description Name</label>
+                    <input 
+                        type="text" 
+                        value={newHolder} 
+                        onChange={e => setNewHolder(e.target.value)} 
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
+                    />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                    <button 
+                        onClick={() => setEditingPost(null)}
+                        className="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={submitEdit}
+                        className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-emerald-600 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white font-semibold rounded-xl transition-all"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

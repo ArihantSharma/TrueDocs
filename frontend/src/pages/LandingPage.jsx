@@ -115,112 +115,188 @@ const LandingPage = () => {
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', padding: '50px', maxWidth: '800px', margin: '0 auto' }}>
-      
+    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
       {/* Navbar equivalent */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-          <Link to="/login" style={{ padding: '10px 20px', backgroundColor: '#343a40', color: 'white', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
-            Login / Admin Portal
-          </Link>
+      <div className="max-w-7xl mx-auto flex justify-end mb-12">
+        <Link to="/login" className="px-6 py-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md rounded-lg text-white font-medium transition-all duration-300 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_25px_rgba(255,255,255,0.1)]">
+          Login / Admin Portal
+        </Link>
       </div>
 
-      <div style={{ textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>TrueDocs Verifier</h1>
-        <p style={{ color: '#6c757d', fontSize: '1.2rem', marginBottom: '40px' }}>Drag and drop documents below to cryptographically verify their authenticity against the SQL Blockchain.</p>
+      <div className="max-w-4xl mx-auto text-center">
+        <div className="mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-4 text-white drop-shadow-lg">
+            TrueDocs <span className="gradient-text">Verifier</span>
+          </h1>
+          <p className="text-xl text-slate-400 font-light">
+            Drag and drop documents below to cryptographically verify their authenticity against the SQL Blockchain.
+          </p>
+        </div>
 
         {results.length === 0 ? (
-            <>
+          <div className="space-y-8 animate-in fade-in zoom-in duration-500">
             <div 
-                {...getRootProps()} 
-                style={{
-                border: isDragActive ? '2px dashed #28a745' : '2px dashed #007bff',
-                backgroundColor: isDragActive ? '#e9fce9' : '#f8f9fa',
-                padding: '60px 20px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-                }}
+              {...getRootProps()} 
+              className={`
+                glass-panel p-16 rounded-2xl cursor-pointer transition-all duration-500
+                ${isDragActive ? 'border-emerald-500/50 bg-emerald-500/10 scale-[1.02] shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'hover:border-blue-500/50 hover:bg-white/10'}
+              `}
             >
-                <input {...getInputProps()} />
-                {isDragActive ? (
-                <p style={{ color: '#28a745', fontWeight: 'bold', fontSize: '1.2rem' }}>Drop the documents right here!</p>
-                ) : (
-                <p style={{ fontSize: '1.2rem' }}>Drag 'n' drop documents here, or <b>click to browse</b></p>
-                )}
+              <input {...getInputProps()} />
+              {isDragActive ? (
+                <p className="text-2xl text-emerald-400 font-medium">Drop the documents right here!</p>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mb-2">
+                    <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <p className="text-xl text-slate-300">Drag 'n' drop documents here, or <span className="text-blue-400 font-semibold">click to browse</span></p>
+                </div>
+              )}
             </div>
 
             {uploadedFiles.length > 0 && (
-                <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#e9ecef', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                  <h4 style={{ marginBottom: '15px', textAlign: 'left' }}>Selected Files ({uploadedFiles.length}):</h4>
-                  <ul style={{ listStyleType: 'none', padding: 0, textAlign: 'left', marginBottom: '20px' }}>
+              <div className="glass-panel p-8 rounded-2xl text-left animate-in slide-in-from-bottom flex flex-col items-center">
+                <div className="w-full mb-6">
+                  <h4 className="text-lg font-medium text-slate-300 mb-4 flex items-center">
+                    <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-sm mr-3 font-semibold">{uploadedFiles.length}</span>
+                    Selected Files
+                  </h4>
+                  <ul className="space-y-3">
                     {uploadedFiles.map((file, idx) => (
-                      <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', backgroundColor: '#fff', marginBottom: '5px', borderRadius: '4px', border: '1px solid #ddd' }}>
-                        <span>📄 {file.name}</span>
+                      <li key={idx} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5 group hover:bg-white/10 transition-colors">
+                        <div className="flex items-center text-slate-200">
+                          <svg className="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                          <span className="font-medium">{file.name}</span>
+                        </div>
                         <button 
                           onClick={() => removeFile(file.name)}
-                          style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                        >X</button>
+                          className="text-slate-500 hover:text-rose-400 transition-colors p-2 rounded-lg hover:bg-rose-500/10 opacity-0 group-hover:opacity-100"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                       </li>
                     ))}
                   </ul>
-                  
-                  <button 
-                      onClick={handleVerify}
-                      disabled={verifying}
-                      style={{ width: '100%', padding: '15px', cursor: verifying ? 'not-allowed' : 'pointer', backgroundColor: verifying ? '#6c757d' : '#007bff', color: 'white', border: 'none', borderRadius: '5px', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                      {verifying ? 'Verifying on Blockchain...' : `Verify ${uploadedFiles.length} Document(s)`}
-                  </button>
                 </div>
-            )}
-            {errorMsg && <p style={{ color: 'red', marginTop: '15px' }}>{errorMsg}</p>}
-            </>
-        ) : (
-            <div>
-              <h2 style={{ marginBottom: '20px' }}>Verification Results</h2>
-              
-              {results.map((res, idx) => (
-                <div key={idx} style={{ marginTop: '20px', padding: '30px', borderRadius: '8px', border: '1px solid #dee2e6', textAlign: 'left', backgroundColor: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
-                      <h3 style={{ margin: 0, color: '#333' }}>📄 {res.fileName}</h3>
-                      <span style={{ 
-                          padding: '5px 15px', borderRadius: '20px', fontWeight: 'bold', color: '#fff',
-                          backgroundColor: res.status === 'VALID' ? '#28a745' : res.status === 'REVOKED' ? '#dc3545' : res.status === 'EXPIRED' ? '#fd7e14' : '#6c757d'
-                      }}>
-                          {res.status}
-                      </span>
+                
+                <button 
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  className={`
+                    w-full relative group overflow-hidden rounded-xl font-semibold text-lg tracking-wide py-4 transition-all duration-300
+                    ${verifying 
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-none' 
+                      : 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white hover:shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-[1.01] border-none'
+                    }
+                  `}
+                >
+                  {verifying && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
                     </div>
-                    
-                    <p style={{ fontSize: '1.1rem', marginBottom: '20px' }}>{res.message}</p>
+                  )}
+                  <span className={verifying ? 'opacity-0' : 'opacity-100'}>
+                    {verifying ? 'Verifying on Blockchain...' : `Verify ${uploadedFiles.length} Document(s)`}
+                  </span>
+                </button>
+              </div>
+            )}
+            {errorMsg && (
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl animate-in fade-in font-medium">
+                {errorMsg}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-8 animate-in slide-in-from-bottom duration-500">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-3xl font-bold text-white">Verification Results</h2>
+              <button onClick={reset} className="px-5 py-2 glass-panel-hover rounded-lg text-slate-300 hover:text-white text-sm font-medium border border-white/10 transition-colors">
+                Verify More
+              </button>
+            </div>
+            
+            {results.map((res, idx) => (
+              <div key={idx} className="glass-panel p-8 rounded-2xl text-left flex flex-col md:flex-row gap-8 relative overflow-hidden group">
+                {/* Colored Status Edge */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                  res.status === 'VALID' ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.7)]' : 
+                  res.status === 'REVOKED' ? 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.7)]' : 
+                  res.status === 'EXPIRED' ? 'bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.7)]' : 'bg-slate-500'
+                }`} />
 
+                <div className="flex-1 ml-3">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-white/5 pb-6">
+                    <h3 className="text-2xl font-bold text-white flex items-center">
+                      <svg className="w-6 h-6 mr-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                      {res.fileName}
+                    </h3>
+                    <span className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-widest uppercase shadow-lg border ${
+                        res.status === 'VALID' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 
+                        res.status === 'REVOKED' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 
+                        res.status === 'EXPIRED' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 
+                        'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                        {res.status}
+                    </span>
+                  </div>
+                  
+                  <p className="text-slate-300 text-lg mb-8 leading-relaxed font-medium">
+                    {res.message}
+                  </p>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {res.hash && (
-                      <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '5px', marginBottom: '20px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                          <strong>Document Hash:</strong><br/>{res.hash}
+                      <div className="bg-black/30 p-5 rounded-xl border border-white/5 group-hover:border-white/10 transition-colors h-full">
+                        <div className="text-slate-500 mb-2 text-xs uppercase tracking-widest font-bold flex items-center">
+                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                           Cryptographic Hash (SHA-256)
+                        </div>
+                        <div className="text-slate-300 select-all font-mono text-sm break-all">{res.hash}</div>
                       </div>
                     )}
 
                     {res.details && (
-                        <div style={{ padding: '20px', backgroundColor: '#e9ecef', borderRadius: '5px' }}>
-                            <h4 style={{ marginTop: 0 }}>Blockchain Record Details:</h4>
-                            <ul style={{ listStyleType: 'none', padding: 0, margin: 0, lineHeight: '1.8' }}>
-                                <li><strong>Post Batch Title:</strong> {res.details.post_title}</li>
-                                <li><strong>Original Filename:</strong> {res.details.title}</li>
-                                <li><strong>Description / Holder:</strong> {res.details.holder_name}</li>
-                                <li><strong>Validity Ends:</strong> {res.details.validity}</li>
-                                <li><strong>Issuing Org ID:</strong> {res.details.issuer_org_id}</li>
-                                <li><strong>Timestamp:</strong> {new Date(res.details.issued_at).toLocaleString()}</li>
-                            </ul>
+                      <div className="bg-black/30 p-5 rounded-xl border border-white/5 group-hover:border-white/10 transition-colors h-full">
+                        <div className="text-slate-500 mb-3 text-xs uppercase tracking-widest font-bold flex items-center">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                          Decoded Metadata
                         </div>
+                        <ul className="space-y-2 text-sm text-slate-300">
+                            <li className="flex gap-2">
+                                <span className="text-slate-500 w-24 flex-shrink-0">Title:</span> 
+                                <span className="font-medium text-white">{res.details.title}</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-slate-500 w-24 flex-shrink-0">Holder:</span> 
+                                <span>{res.details.holder_name}</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-slate-500 w-24 flex-shrink-0">Batch:</span> 
+                                <span>{res.details.post_title}</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-slate-500 w-24 flex-shrink-0">Expires:</span> 
+                                <span>{res.details.validity}</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-slate-500 w-24 flex-shrink-0">Timestamp:</span> 
+                                <span>{new Date(res.details.issued_at).toLocaleString()}</span>
+                            </li>
+                        </ul>
+                      </div>
                     )}
+                  </div>
                 </div>
-              ))}
-
-              <div style={{ textAlign: 'center', marginTop: '40px' }}>
-                  <button onClick={reset} style={{ padding: '12px 30px', fontSize: '1.1rem', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-                      Verify More Documents
-                  </button>
               </div>
-            </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
