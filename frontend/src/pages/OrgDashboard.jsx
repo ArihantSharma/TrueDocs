@@ -96,6 +96,7 @@ const OrgDashboard = () => {
       const address = await signer.getAddress();
       setAccount(address);
       setNetworkWarning('');
+      localStorage.setItem(`wallet_${token?.substring(0,10)}`, address);
 
       // Step 4: Create contract on the fresh, correctly-networked signer
       const loadedContract = new ethers.Contract(CONTRACT_ADDRESS, TrueDocsRegistryABI, signer);
@@ -235,160 +236,225 @@ const OrgDashboard = () => {
   };
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1>Organization Dashboard</h1>
-        <div>
-          <button onClick={() => window.location.href='/organization/posts'} style={{ padding: '10px 20px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>
-            Manage Posts
-          </button>
-          <button onClick={handleLogout} style={{ padding: '10px 20px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-            Logout
-          </button>
-        </div>
-      </div>
-      <p style={{ color: '#555', marginBottom: '30px' }}>Upload official documents to IPFS and issue them directly to the Ethereum Blockchain.</p>
-
-      {/* Wallet Connection Banner */}
-      <div style={{ 
-        backgroundColor: account ? '#d4edda' : '#fff3cd', 
-        padding: '15px', 
-        borderRadius: '8px', 
-        marginBottom: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        border: `1px solid ${account ? '#c3e6cb' : '#ffeeba'}`
-      }}>
-        {networkWarning && (
-          <p style={{ margin: 0, color: '#721c24', fontWeight: 'bold', backgroundColor: '#f8d7da', padding: '8px', borderRadius: '4px' }}>
-            {networkWarning}
-          </p>
-        )}
-        {account ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ margin: 0, color: '#155724', fontWeight: 'bold' }}>
-              ✅ Wallet Connected: {account.substring(0, 6)}...{account.substring(38)}
-            </p>
-            <button
-              onClick={connectWallet}
-              style={{ padding: '5px 12px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              Switch Account
-            </button>
+    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Organization <span className="gradient-text">Dashboard</span></h1>
+            <p className="text-slate-400 text-lg">Upload official documents to IPFS and issue them directly to the Ethereum Blockchain.</p>
           </div>
-        ) : (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <p style={{ margin: 0, color: '#856404', fontWeight: 'bold' }}>
-                ⚠️ Connect your MetaMask wallet to issue documents.
-              </p>
-              <p style={{ margin: '4px 0 0 0', color: '#856404', fontSize: '0.85rem' }}>
-                Make sure you imported the Hardhat test account (see logs: <code>docker-compose logs hardhat</code>)
-              </p>
-            </div>
+          <div className="flex gap-4">
             <button 
-              onClick={connectWallet}
-              style={{ padding: '8px 15px', backgroundColor: '#f5841f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap', marginLeft: '10px' }}
+              onClick={() => window.location.href='/organization/posts'} 
+              className="px-6 py-2.5 glass-panel-hover rounded-xl text-white font-medium transition-all duration-300 border border-white/10 hover:border-blue-500/50 shadow-lg flex items-center"
             >
-              Connect MetaMask
+              <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              Manage Vault
+            </button>
+            <button 
+              onClick={handleLogout} 
+              className="px-6 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-medium transition-all duration-300 rounded-xl border border-rose-500/20 hover:border-rose-500/50"
+            >
+              Logout
             </button>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-        <form onSubmit={handleUpload}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Document Batch Title</label>
-            <input 
-              type="text" 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., 2026 Graduating Class Certificates" 
-              required
-              disabled={!account}
-              style={{ width: '100%', padding: '12px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '16px', backgroundColor: !account ? '#e9ecef' : '#fff' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Holder Name(s) / Description</label>
-            <textarea 
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Name of the person holding these documents..." 
-              required
-              disabled={!account}
-              rows="2"
-              style={{ width: '100%', padding: '12px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '16px', resize: 'vertical', backgroundColor: !account ? '#e9ecef' : '#fff' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Validity Expiration Date</label>
-            <input 
-              type="date"
-              value={validity}
-              onChange={(e) => setValidity(e.target.value)}
-              required
-              disabled={!account}
-              style={{ width: '100%', padding: '12px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '16px', backgroundColor: !account ? '#e9ecef' : '#fff' }}
-            />
-          </div>
-
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Files</label>
-          <div 
-            {...getRootProps()} 
-            style={{
-              border: isDragActive ? '2px dashed #007bff' : '2px dashed #ccc',
-              backgroundColor: isDragActive ? '#e9f2fc' : (!account ? '#e9ecef' : '#fafafa'),
-              padding: '40px 20px',
-              borderRadius: '8px',
-              textAlign: 'center',
-              cursor: account ? 'pointer' : 'not-allowed',
-              marginBottom: '20px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <input {...getInputProps()} disabled={!account} />
-            {isDragActive ? (
-              <p style={{ color: '#007bff', margin: 0 }}>Drop the files here!</p>
-            ) : (
-              <p style={{ color: '#666', margin: 0 }}>
-                {account ? "Drag 'n' drop multiple files here, or click to select files" : "Connect wallet to upload files"}
-              </p>
-            )}
-          </div>
-
-          {files.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ marginBottom: '10px' }}>Files to Upload:</h4>
-              <ul style={{ listStyleType: 'none', padding: 0 }}>
-                {files.map((file, index) => (
-                  <li key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', backgroundColor: '#f4f7f6', marginBottom: '5px', borderRadius: '4px' }}>
-                    <span>📄 {file.name}</span>
-                    <button 
-                      type="button" 
-                      onClick={() => removeFile(file.name)}
-                      style={{ color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                    >
-                      X
-                    </button>
-                  </li>
-                ))}
-              </ul>
+        {/* Wallet Connection Banner */}
+        <div className={`
+          relative overflow-hidden p-6 rounded-2xl mb-8 flex flex-col md:flex-row justify-between items-center gap-6 border transition-all duration-500 shadow-xl
+          ${account 
+            ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]' 
+            : 'bg-amber-500/10 border-amber-500/30'
+          }
+        `}>
+          {networkWarning && (
+            <div className="absolute top-0 left-0 right-0 bg-rose-500 text-white text-xs font-bold text-center py-1">
+              {networkWarning}
             </div>
           )}
+          
+          <div className="flex items-center gap-4 z-10 w-full md:w-auto mt-2 md:mt-0">
+            <div className={`p-3 rounded-full ${account ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+              </svg>
+            </div>
+            <div>
+              {account ? (
+                <>
+                  <p className="text-emerald-400 font-bold text-lg mb-1">Wallet Connected Securely</p>
+                  <p className="text-emerald-200/70 font-mono text-sm tracking-widest">{account}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-amber-400 font-bold text-lg mb-1">Wallet Connection Required</p>
+                  <p className="text-amber-200/70 text-sm">Connect MetaMask to issue documents to the blockchain.</p>
+                </>
+              )}
+            </div>
+          </div>
 
-          <button 
-            type="submit" 
-            disabled={uploading || !account}
-            style={{ width: '100%', padding: '15px', backgroundColor: (uploading || !account) ? '#6c757d' : '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '18px', cursor: (uploading || !account) ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}
-          >
-            {uploading ? 'Confirming on Blockchain...' : 'Sign & Upload to IPFS'}
-          </button>
-        </form>
+          <div className="z-10 w-full md:w-auto">
+             {account ? (
+                <button
+                  onClick={switchAccount}
+                  className="w-full md:w-auto px-6 py-2.5 bg-black/40 hover:bg-black/60 text-slate-300 hover:text-white transition-all duration-300 rounded-xl border border-white/10 font-medium"
+                >
+                  Switch Account
+                </button>
+             ) : (
+                <button 
+                  onClick={connectWallet}
+                  className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] hover:scale-[1.02] transition-all duration-300"
+                >
+                  Connect MetaMask
+                </button>
+             )}
+          </div>
+        </div>
+
+        {/* Upload Form */}
+        <div className="glass-panel p-8 md:p-10 rounded-3xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-32 -mt-32"></div>
+
+          <form onSubmit={handleUpload} className="relative z-10 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* Left Column: Metadata */}
+                <div className="space-y-6">
+                    <h3 className="text-xl font-bold text-white mb-4 border-b border-white/10 pb-4">Document Metadata</h3>
+                    
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300 ml-1">Document Batch Title</label>
+                        <input 
+                        type="text" 
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g., 2026 Graduating Class Certificates" 
+                        required
+                        disabled={!account}
+                        className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300 ml-1">Holder Name(s) / Description</label>
+                        <textarea 
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Name of the person holding these documents..." 
+                        required
+                        disabled={!account}
+                        rows="3"
+                        className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300 ml-1">Validity Expiration Date</label>
+                        <input 
+                        type="date"
+                        value={validity}
+                        onChange={(e) => setValidity(e.target.value)}
+                        required
+                        disabled={!account}
+                        className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ colorScheme: 'dark' }}
+                        />
+                    </div>
+                </div>
+
+                {/* Right Column: File Dropzone */}
+                <div className="space-y-6 flex flex-col">
+                    <h3 className="text-xl font-bold text-white mb-4 border-b border-white/10 pb-4">Upload Payload</h3>
+                    
+                    <div 
+                        {...getRootProps()} 
+                        className={`
+                            flex-1 min-h-[250px] rounded-2xl border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center p-6 text-center
+                            ${!account ? 'border-white/5 bg-black/20 cursor-not-allowed opacity-50' : 
+                              isDragActive ? 'border-emerald-500/50 bg-emerald-500/10 scale-[1.02]' : 
+                              'border-white/20 bg-black/30 hover:border-blue-500/50 hover:bg-white/5 cursor-pointer'}
+                        `}
+                    >
+                        <input {...getInputProps()} disabled={!account} />
+                        <div className={`p-4 rounded-full mb-4 ${isDragActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-slate-400'}`}>
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </div>
+                        {isDragActive ? (
+                            <p className="text-xl text-emerald-400 font-bold">Release to drop files here!</p>
+                        ) : (
+                            <div className="space-y-2">
+                                <p className="text-lg text-slate-200 font-medium">{account ? "Drag & drop files here" : "Wallet lock active"}</p>
+                                <p className="text-sm text-slate-400">{account ? "or click to browse from your computer" : "Connect MetaMask to unlock upload"}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Selected Files List */}
+            {files.length > 0 && (
+              <div className="bg-black/40 rounded-2xl p-6 border border-white/5 animate-in fade-in">
+                <h4 className="text-slate-300 font-bold mb-4 flex items-center">
+                   <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-sm mr-2">{files.length}</span>
+                   Queued for Issuance
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {files.map((file, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl group hover:bg-white/10 transition-colors">
+                      <div className="flex items-center text-slate-300 overflow-hidden">
+                        <svg className="w-5 h-5 mr-3 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        <span className="truncate text-sm font-medium">{file.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => removeFile(file.name)}
+                        className="text-slate-500 hover:text-rose-400 transition-colors p-1.5 rounded-lg hover:bg-rose-500/10 ml-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <div className="pt-4 border-t border-white/10">
+                <button 
+                type="submit" 
+                disabled={uploading || !account || files.length === 0}
+                className={`
+                    w-full relative group overflow-hidden rounded-xl font-bold text-lg tracking-wider py-4 transition-all duration-300 flex items-center justify-center
+                    ${(uploading || !account || files.length === 0)
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-none' 
+                        : 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white hover:shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-[1.01] border-none'
+                    }
+                `}
+                >
+                {uploading ? (
+                    <>
+                        <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Confirming on Blockchain...
+                    </>
+                ) : (
+                    <>
+                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Sign & Issue to Blockchain
+                    </>
+                )}
+                </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
