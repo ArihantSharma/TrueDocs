@@ -121,35 +121,20 @@ const LandingPage = () => {
       if (field === undefined || field === null) return '""';
       const stringField = String(field);
       // If the field contains quotes, commas, or newlines, wrap it in quotes and double the internal quotes
-      if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\\n') || stringField.includes('\\r')) {
+      if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n') || stringField.includes('\r')) {
         return `"${stringField.replace(/"/g, '""')}"`;
       }
       return stringField;
     };
 
-    // Calculate Summary Stats
-    const total = results.length;
-    const valid = results.filter(r => r.status === 'VALID').length;
-    const revoked = results.filter(r => r.status === 'REVOKED').length;
-    const expired = results.filter(r => r.status === 'EXPIRED').length;
-    const unverified = results.filter(r => r.status.includes('UNVERIFIED') || r.status === 'ERROR').length;
-
-    // Use \\r\\n (CRLF) for best compatibility with Excel and other spreadsheet software
-    const CRLF = '\\r\\n';
+    // Use CRLF for best compatibility with Excel and other spreadsheet software
+    const CRLF = '\r\n';
+    const reportGeneratedOn = new Date().toLocaleString();
     
     let csvContent = "";
-    csvContent += `TrueDocs Verification Report${CRLF}`;
-    csvContent += `Generated On:,${escapeCSV(new Date().toLocaleString())}${CRLF}${CRLF}`;
     
-    csvContent += `--- SUMMARY ---${CRLF}`;
-    csvContent += `Total Documents Checked,${total}${CRLF}`;
-    csvContent += `Valid Authenticated,${valid}${CRLF}`;
-    csvContent += `Revoked (Action Required),${revoked}${CRLF}`;
-    csvContent += `Expired,${expired}${CRLF}`;
-    csvContent += `Unverified / Error,${unverified}${CRLF}${CRLF}`;
-
-    csvContent += `--- DETAILED RESULTS ---${CRLF}`;
-    const headers = ['File Name', 'Verification Status', 'System Message', 'Cryptographic Hash (SHA-256)', 'Batch / Post Title', 'Holder Name', 'Validity Expiration', 'Original Issue Date'];
+    // Header on Line 1
+    const headers = ['File Name', 'Verification Status', 'System Message', 'Cryptographic Hash (SHA-256)', 'Batch / Post Title', 'Holder Name', 'Validity Expiration', 'Original Issue Date', 'Report Generated On'];
     csvContent += headers.join(',') + CRLF;
     
     const rows = results.map(res => {
@@ -161,7 +146,8 @@ const LandingPage = () => {
             escapeCSV(res?.details?.post_title || 'N/A'),
             escapeCSV(res?.details?.holder_name || 'N/A'),
             escapeCSV(res?.details?.validity || 'N/A'),
-            escapeCSV(res?.details?.issued_at ? new Date(res.details.issued_at).toLocaleString() : 'N/A')
+            escapeCSV(res?.details?.issued_at ? new Date(res.details.issued_at).toLocaleString() : 'N/A'),
+            escapeCSV(reportGeneratedOn)
         ].join(',');
     });
 
