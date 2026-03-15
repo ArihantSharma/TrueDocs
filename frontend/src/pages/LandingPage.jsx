@@ -1,6 +1,11 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Link } from 'react-router-dom';
+import { ethers } from 'ethers';
+import TrueDocsRegistryABI from '../contracts/TrueDocsRegistryABI.json';
+
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const RPC_URL = "http://localhost:8545"; // Local Hardhat node
 
 const LandingPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -19,6 +24,14 @@ const LandingPage = () => {
     multiple: true
   });
 
+  const hashFile = async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  };
+
   const handleVerify = async () => {
     if (uploadedFiles.length === 0) return;
 
@@ -28,25 +41,63 @@ const LandingPage = () => {
 
     const newResults = [];
 
-    for (const file of uploadedFiles) {
-      const formData = new FormData();
-      formData.append("file", file);
+    try {
+      const provider = new ethers.JsonRpcProvider(RPC_URL);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, TrueDocsRegistryABI, provider);
 
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/verify/document`, {
-          method: "POST",
-          body: formData
-        });
+      for (const file of uploadedFiles) {
+        try {
+          // 1. Calculate Hash locally
+          const docHash = await hashFile(file);
+          
+          // 2. Query Blockchain
+          console.log(`Verifying on-chain for hash: ${docHash}`);
+          const [isValid, isOnChainRevoked, isExpired] = await contract.verifyDocument(docHash);
+          
+          // 3. Query Backend for metadata (Optional but nice for UX)
+          let status = "UNVERIFIED";
+          let message = "This document was not found in our records.";
+          let details = null;
 
-        if (!response.ok) {
-          throw new Error(`Verification request failed for ${file.name}`);
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/verify/document/hash?doc_hash=${docHash}`);
+          if (response.ok) {
+            const data = await response.json();
+            details = data.details;
+          }
+
+          // Combine on-chain status with backend presence
+          if (isValid) {
+            status = "VALID";
+            message = "Document is authentic and currently valid.";
+          } else if (isExpired) {
+            status = "EXPIRED";
+            message = "This document has reached its expiration date and is no longer valid.";
+          } else if (isOnChainRevoked) {
+            status = "REVOKED";
+            message = "This document has been explicitly revoked by the issuing organization.";
+          } else if (details) {
+              // Document exists in DB but not on blockchain? 
+              // Maybe it was issued before blockchain migration or there's a sync issue.
+              // For strictness, if it's not on blockchain, we treat as unverified if we moved fully to blockchain.
+              status = "UNVERIFIED (Off-Chain)";
+              message = "Record found in database but not yet confirmed on the Ethereum blockchain.";
+          }
+
+          newResults.push({ 
+            fileName: file.name, 
+            status, 
+            message, 
+            hash: docHash,
+            details 
+          });
+        } catch (err) {
+          console.error(err);
+          newResults.push({ fileName: file.name, status: "ERROR", message: "Error during cryptographic verification." });
         }
-
-        const data = await response.json();
-        newResults.push({ fileName: file.name, ...data });
-      } catch (err) {
-        newResults.push({ fileName: file.name, status: "ERROR", message: err.message });
       }
+    } catch (err) {
+        console.error(err);
+        setErrorMsg("Failed to connect to the Ethereum verification network. Please ensure the node is running.");
     }
 
     setResults(newResults);
@@ -134,7 +185,7 @@ const LandingPage = () => {
                       <h3 style={{ margin: 0, color: '#333' }}>📄 {res.fileName}</h3>
                       <span style={{ 
                           padding: '5px 15px', borderRadius: '20px', fontWeight: 'bold', color: '#fff',
-                          backgroundColor: res.status === 'VALID' ? '#28a745' : res.status === 'REVOKED' ? '#dc3545' : '#856404'
+                          backgroundColor: res.status === 'VALID' ? '#28a745' : res.status === 'REVOKED' ? '#dc3545' : res.status === 'EXPIRED' ? '#fd7e14' : '#6c757d'
                       }}>
                           {res.status}
                       </span>

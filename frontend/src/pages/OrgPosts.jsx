@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ethers } from 'ethers';
+import TrueDocsRegistryABI from '../contracts/TrueDocsRegistryABI.json';
+
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 const OrgPosts = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   
+  // Wallet state
+  const [account, setAccount] = useState(null);
+  const [contract, setContract] = useState(null);
+
   // Modal state
   const [editingPost, setEditingPost] = useState(null);
   const [newTitle, setNewTitle] = useState('');
@@ -21,6 +29,64 @@ const OrgPosts = () => {
     }
     fetchPosts();
   }, [navigate, token]);
+
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      alert("Please install MetaMask! Get it at: https://metamask.io/download/");
+      return;
+    }
+
+    try {
+      // Switch to Hardhat FIRST
+      const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+      const currentChainId = parseInt(chainIdHex, 16);
+
+      if (currentChainId !== 31337) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x7A69' }],
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x7A69',
+                chainName: 'Hardhat Local',
+                rpcUrls: ['http://127.0.0.1:8545'],
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+              }],
+            });
+          } else {
+            throw switchError;
+          }
+        }
+      }
+
+      // Verify chain
+      const confirmedChainHex = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(confirmedChainHex, 16) !== 31337) {
+        alert('❌ Still not on Hardhat Local. Please switch manually in MetaMask (Chain ID 31337).');
+        return;
+      }
+
+      // Fresh provider AFTER switch
+      const freshProvider = new ethers.BrowserProvider(window.ethereum);
+      await freshProvider.send("eth_requestAccounts", []);
+      const signer = await freshProvider.getSigner();
+      const address = await signer.getAddress();
+      setAccount(address);
+
+      const loadedContract = new ethers.Contract(CONTRACT_ADDRESS, TrueDocsRegistryABI, signer);
+      setContract(loadedContract);
+    } catch (error) {
+      if (error.code !== 4001) {
+        console.error("Wallet connection failed:", error);
+        alert(`Wallet connection failed: ${error.message}`);
+      }
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -73,11 +139,45 @@ const OrgPosts = () => {
   };
 
   const handleRevoke = async (postTitle) => {
-    const confirmRevoke = window.confirm(`Are you absolutely sure you want to revoke ALL documents in the post "${postTitle}"?\nThis action cannot be undone and will permanently mark them as revoked on the blockchain.`);
+    if (!account || !contract) {
+      alert("Please connect your MetaMask wallet first!");
+      return;
+    }
+
+    const confirmRevoke = window.confirm(`Are you absolutely sure you want to revoke ALL documents in the post "${postTitle}"?\nThis action involves signing transactions on the Ethereum blockchain and cannot be undone.`);
     if (!confirmRevoke) return;
 
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/document/post`, {
+      setLoading(true);
+      // 1. Get all document hashes for this post from backend
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/document/posts`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch post details for revocation');
+      const data = await res.json();
+      
+      // Filter documents for this specific batch title if needed, 
+      // but the current API returns simplified results. 
+      // Let's call a specific endpoint for documents within a post (which we implemented earlier in the backend)
+      
+      const docRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/document/post/documents?post_title=${encodeURIComponent(postTitle)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!docRes.ok) throw new Error('Failed to fetch document hashes for this post');
+      const docData = await docRes.json();
+      
+      // 2. Revoke each on the blockchain
+      for (const doc of docData.documents) {
+        if (!doc.revoked) {
+           console.log(`Revoking hash on blockchain: ${doc.document_hash}`);
+           const tx = await contract.revokeDocument(doc.document_hash);
+           await tx.wait();
+           console.log(`Hash ${doc.document_hash} revoked on blockchain.`);
+        }
+      }
+
+      // 3. Update backend state (relational mapping)
+      const finalRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/document/post`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -86,12 +186,15 @@ const OrgPosts = () => {
         body: JSON.stringify({ post_title: postTitle })
       });
 
-      if (!res.ok) throw new Error('Failed to revoke post');
+      if (!finalRes.ok) throw new Error('Failed to update backend revocation status');
       
-      alert(`Post "${postTitle}" has been successfully revoked.`);
+      alert(`Post "${postTitle}" has been successfully revoked on both the blockchain and the database.`);
       fetchPosts(); // Refresh list
     } catch (err) {
-        alert(err.message);
+        console.error(err);
+        alert(`Revocation error: ${err.message}`);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -108,6 +211,36 @@ const OrgPosts = () => {
       </div>
 
       {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
+
+      {/* Wallet Connection Banner */}
+      <div style={{ 
+        backgroundColor: account ? '#d4edda' : '#fff3cd', 
+        padding: '15px', 
+        borderRadius: '8px', 
+        marginBottom: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        border: `1px solid ${account ? '#c3e6cb' : '#ffeeba'}`
+      }}>
+        {account ? (
+          <p style={{ margin: 0, color: '#155724', fontWeight: 'bold' }}>
+            ✅ Wallet Connected: {account.substring(0, 6)}...{account.substring(38)}
+          </p>
+        ) : (
+          <>
+            <p style={{ margin: 0, color: '#856404' }}>
+              ⚠️ You must connect your Web3 Wallet to perform batch revocations.
+            </p>
+            <button 
+              onClick={connectWallet}
+              style={{ padding: '8px 15px', backgroundColor: '#f5841f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              Connect MetaMask
+            </button>
+          </>
+        )}
+      </div>
 
       {loading ? (
         <p>Loading posts...</p>
@@ -137,9 +270,11 @@ const OrgPosts = () => {
                     <td style={{ padding: '15px' }}>{new Date(post.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '15px' }}>
                         {post.any_revoked ? (
-                            <span style={{ color: '#dc3545', fontWeight: 'bold' }}>REVOKED</span>
+                            <span style={{ color: '#dc3545', fontWeight: 'bold' }}>🔴 REVOKED</span>
+                        ) : !post.all_confirmed ? (
+                            <span style={{ color: '#856404', fontWeight: 'bold', backgroundColor: '#fff3cd', padding: '2px 8px', borderRadius: '4px' }}>⏳ PENDING BLOCKCHAIN</span>
                         ) : (
-                            <span style={{ color: '#28a745', fontWeight: 'bold' }}>ACTIVE</span>
+                            <span style={{ color: '#28a745', fontWeight: 'bold' }}>✅ ACTIVE</span>
                         )}
                     </td>
                     <td style={{ padding: '15px', textAlign: 'right' }}>

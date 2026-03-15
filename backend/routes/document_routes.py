@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, Depends, Form, File, HTTPException
+from pydantic import BaseModel
 from typing import List
 from utils.crypto import hash_document
 from utils.auth import get_current_organisation
@@ -53,7 +54,7 @@ async def upload_document(
             except Exception as e:
                 print(f"Pinata IPFS error: {e}")
         
-        # Store in SQL Blockchain
+        # Store in SQL Blockchain (legacy)
         tx = await blockchain.store_hash(doc_hash)
         
         # Store in Document DB
@@ -62,7 +63,7 @@ async def upload_document(
             await doc_db.add_document(
                 uuid_lib.UUID(org_id),
                 post_title,
-                file.filename, # Using original file name as title
+                file.filename,
                 holder_name,
                 validity,
                 doc_hash,
@@ -71,13 +72,34 @@ async def upload_document(
             )
             results.append({"filename": file.filename, "hash": doc_hash, "tx": tx, "cid": cid})
         except Exception as e:
-            # Simple error catching, could be duplicate hash etc
             results.append({"filename": file.filename, "error": str(e)})
 
     return {
         "post_title": post_title,
         "results": results
     }
+
+class ConfirmBlockchainRequest(BaseModel):
+    doc_hash: str
+    tx_hash: str
+    wallet_address: str
+
+@router.post("/document/confirm_blockchain")
+async def confirm_blockchain(
+    request: ConfirmBlockchainRequest,
+    org=Depends(get_current_organisation),
+    doc_db=Depends(get_doc_db)
+):
+    """Called by frontend after tx.wait() succeeds to mark document as blockchain-confirmed."""
+    await doc_db.confirm_blockchain_document(request.doc_hash, request.tx_hash)
+    # Also save wallet address on confirm
+    await doc_db.db.execute(
+        "UPDATE documents SET wallet_address=$1 WHERE document_hash=$2",
+        request.wallet_address,
+        request.doc_hash
+    )
+    return {"status": "confirmed", "doc_hash": request.doc_hash}
+
 
 @router.post("/document/revoke")
 async def revoke_document(
@@ -139,6 +161,16 @@ async def update_post(
 class RevokePostRequest(BaseModel):
     post_title: str
 
+@router.get("/document/post/documents")
+async def get_post_documents(
+    post_title: str,
+    org=Depends(get_current_organisation),
+    doc_db=Depends(get_doc_db)
+):
+    org_id = org["sub"]
+    docs = await doc_db.get_documents_by_post(org_id, post_title)
+    return {"documents": [dict(d) for d in docs]}
+
 @router.delete("/document/post")
 async def revoke_post(
     request: RevokePostRequest,
@@ -154,19 +186,11 @@ async def revoke_post(
     if not docs:
         raise HTTPException(status_code=404, detail="Post not found")
         
-    # Check if any are already revoked to avoid redundant txs (optional optimization)
-    # Revoke each on the blockchain
-    txs = []
-    for doc in docs:
-        if not doc["revoked"]:
-            tx = await blockchain.revoke_hash(doc["document_hash"])
-            txs.append(tx)
-            
-    # Mark all as revoked in SQL
+    # Mark all as revoked in SQL (Relational/Mapping state)
+    # The actual blockchain revocation is handled by the frontend via Ethereum
     await doc_db.revoke_post(org_id, request.post_title)
     
     return {
         "status": "success", 
-        "message": f"Successfully revoked {len(txs)} documents in post '{request.post_title}'",
-        "txs": txs
+        "message": f"Successfully revoked batch '{request.post_title}' in local database."
     }

@@ -52,3 +52,30 @@ async def verify_document(
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+@router.get("/document/hash")
+async def verify_document_by_hash(
+    doc_hash: str,
+    doc_db=Depends(get_doc_db)
+):
+    try:
+        doc_details = await doc_db.get_by_hash(doc_hash)
+        
+        if not doc_details:
+             raise HTTPException(status_code=404, detail="No metadata found for this hash")
+             
+        return {
+            "status": "RECORD_FOUND",
+            "hash": doc_hash,
+            "details": {
+                "title": doc_details["title"],
+                "holder_name": doc_details["holder_name"],
+                "post_title": doc_details["post_title"],
+                "validity": doc_details["validity"],
+                "issuer_org_id": str(doc_details["org_id"]),
+                "issued_at": doc_details["created_at"]
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

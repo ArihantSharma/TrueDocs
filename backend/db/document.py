@@ -20,11 +20,23 @@ class DocumentDB:
             ipfs_cid TEXT,
             blockchain_tx TEXT,
             revoked BOOLEAN DEFAULT FALSE,
+            blockchain_confirmed BOOLEAN DEFAULT FALSE,
+            wallet_address TEXT,
             created_at TIMESTAMP DEFAULT NOW()
         );
         """
-
         await self.db.execute(query)
+
+        # Safe migrations — add columns/constraints if they don't already exist
+        migrations = [
+            "ALTER TABLE documents ADD COLUMN IF NOT EXISTS blockchain_confirmed BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE documents ADD COLUMN IF NOT EXISTS wallet_address TEXT",
+            # This is required for ON CONFLICT (document_hash) DO NOTHING to work
+            "ALTER TABLE documents DROP CONSTRAINT IF EXISTS documents_document_hash_key",
+            "ALTER TABLE documents ADD CONSTRAINT documents_document_hash_key UNIQUE (document_hash)",
+        ]
+        for migration in migrations:
+            await self.db.execute(migration)
 
     async def add_document(
         self,
@@ -35,15 +47,17 @@ class DocumentDB:
         validity,
         doc_hash,
         cid,
-        tx
+        tx,
+        wallet_address=None
     ):
 
         query = """
         INSERT INTO documents(
         id,org_id,post_title,title,holder_name,validity,document_hash,
-        ipfs_cid,blockchain_tx
+        ipfs_cid,blockchain_tx,wallet_address
         )
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        ON CONFLICT (document_hash) DO NOTHING
         """
 
         return await self.db.execute(
@@ -56,8 +70,17 @@ class DocumentDB:
             validity,
             doc_hash,
             cid,
-            tx
+            tx,
+            wallet_address
         )
+
+    async def confirm_blockchain_document(self, doc_hash, tx_hash):
+        query = """
+        UPDATE documents
+        SET blockchain_confirmed=TRUE, blockchain_tx=$1
+        WHERE document_hash=$2
+        """
+        return await self.db.execute(query, tx_hash, doc_hash)
 
     async def get_by_hash(self, doc_hash):
 
@@ -94,7 +117,9 @@ class DocumentDB:
             MAX(validity) as validity,
             COUNT(id) as document_count,
             MIN(created_at) as created_at,
-            BOOL_OR(revoked) as any_revoked
+            BOOL_OR(revoked) as any_revoked,
+            BOOL_AND(blockchain_confirmed) as all_confirmed,
+            MAX(wallet_address) as wallet_address
         FROM documents
         WHERE org_id=$1
         GROUP BY post_title

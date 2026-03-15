@@ -1,0 +1,4 @@
+node_modules
+cache
+artifacts
+hardhat_node.log
