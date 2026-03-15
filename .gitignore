@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+backend/blockchain/node_modules/
+frontend/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+hardhat_node.log
+
+# Hardhat artifacts/cache (compiled locally, not needed in git)
+backend/blockchain/artifacts/
+backend/blockchain/cache/
+
+# Docker volumes / local data
+.data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
